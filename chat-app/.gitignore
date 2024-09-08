@@ -23,6 +23,8 @@ sdist/
 var/
 wheels/
 share/python-wheels/
+chat-app-credentials.json
+
 *.egg-info/
 .installed.cfg
 *.egg

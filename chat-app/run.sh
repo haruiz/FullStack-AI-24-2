@@ -1,0 +1,1 @@
+poetry run chainlit run ./app/main.py --watch

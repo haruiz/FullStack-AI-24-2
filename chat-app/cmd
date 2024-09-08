@@ -1,9 +1,0 @@
-gcloud projects add-iam-policy-binding  multimodalchatdemo \
-  --member serviceAccount:multimodal-chat-app@multimodalchatdemo.iam.gserviceaccount.com \
-  --role=projects/multimodalchatdemo/roles/CustomRole
-
-
-gcloud projects get-iam-policy multimodalchatdemo  \
---flatten="bindings[].members" \
---format='table(bindings.role)' \
---filter="bindings.members:multimodal-chat-app"
