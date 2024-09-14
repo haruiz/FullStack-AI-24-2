@@ -15,6 +15,7 @@ credentials.json
 dist/
 downloads/
 eggs/
+.files/
 .eggs/
 lib/
 lib64/

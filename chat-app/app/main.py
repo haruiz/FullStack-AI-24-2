@@ -1,5 +1,3 @@
-import asyncio
-from functools import partial
 
 import chainlit as cl
 import vertexai
@@ -15,7 +13,16 @@ import torch
 from diffusers import StableDiffusion3Pipeline
 
 
-# Fetch environment variables
+
+system_message = (
+"You are a helpful chatbot. You are here to assist the user in any way you can. You can provide information, answer questions, and help the user with their needs."
+"You can also provide recommendations, suggestions, and advice. You are friendly, polite, and professional." 
+"You are knowledgeable, resourceful, and reliable. You are a good listener, and you are patient and understanding."
+"You are here to help the user, and you are dedicated to providing the best possible service."
+"You are a helpful chatbot, and you are always ready to assist the user."
+"Generate response in the same language as the user's input."
+)
+
 def get_gcp_credentials(credentials_file=None):
     """
     Retrieves GCP credentials to initialize the Vertex AI client.
@@ -36,17 +43,6 @@ def get_gcp_credentials(credentials_file=None):
         raise DefaultCredentialsError("Unable to obtain default credentials. Ensure that the environment "
                                       "is properly configured.") from e
 
-@tenacity.retry(wait=tenacity.wait_fixed(2), stop=tenacity.stop_after_attempt(3), reraise=True)
-async def send_chat_message(chat_session, message):
-    """
-    Sends a chat message to the chatbot.
-    """
-    try:
-        response = await chat_session.send_message_async(message, tools=get_model_tools())
-        return response
-    except Exception as e:
-        raise RuntimeError(f"Failed to send chat message: {e}") from e
-    
 
 
 PROJECT_ID = "build-with-ai-project"
@@ -61,16 +57,21 @@ stable_diffusion = StableDiffusion3Pipeline.from_pretrained(
 image_gen_pipeline = stable_diffusion.to("mps")
 
 
-system_message = (
-"You are a helpful chatbot. You are here to assist the user in any way you can. You can provide information, answer questions, and help the user with their needs."
-"You can also provide recommendations, suggestions, and advice. You are friendly, polite, and professional." 
-"You are knowledgeable, resourceful, and reliable. You are a good listener, and you are patient and understanding."
-"You are here to help the user, and you are dedicated to providing the best possible service."
-"You are a helpful chatbot, and you are always ready to assist the user."
-"Generate response in the same language as the user's input."
-)
 
-def generate_picture_using_imagen(prompt: str, num_images: int):
+@tenacity.retry(wait=tenacity.wait_fixed(2), stop=tenacity.stop_after_attempt(3), reraise=True)
+async def send_chat_message(chat_session, message):
+    """
+    Sends a chat message to the chatbot.
+    """
+    try:
+        response = await chat_session.send_message_async(message, tools=get_model_tools())
+        return response
+    except Exception as e:
+        raise RuntimeError(f"Failed to send chat message: {e}") from e
+    
+
+
+def generate_images_using_imagen(prompt: str, num_images: int):
     """
     Generate a picture based on the prompt.
     """
@@ -93,7 +94,7 @@ def generate_picture_using_imagen(prompt: str, num_images: int):
     return files
 
 
-def generate_picture_using_stable_diff(prompt: str, num_images: int):
+def generate_images_using_stable_diff(prompt: str, num_images: int):
     """
     Generate a picture based on the prompt.
     """
@@ -162,9 +163,9 @@ async def generate_image_tool(model, **function_args):
     :return:
     """
     if model == "imagen":
-        result = await cl.make_async(generate_picture_using_imagen)(**function_args)
+        result = await cl.make_async(generate_images_using_imagen)(**function_args)
     elif model == "stable_diff":
-        result =  await cl.make_async(generate_picture_using_stable_diff)(**function_args)
+        result =  await cl.make_async(generate_images_using_stable_diff)(**function_args)
     else:
         raise ValueError(f"Invalid model: {model}")
     return result
