@@ -18,6 +18,7 @@ diffusers = "^0.30.2"
 torch = "^2.4.1"
 transformers = {extras = ["sentencepiece"], version = "^4.44.2"}
 accelerate = "^0.34.2"
+google-cloud-secret-manager = "^2.20.2"
 
 [build-system]
 requires = ["poetry-core"]

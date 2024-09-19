@@ -1,3 +1,4 @@
+import os.path
 
 import chainlit as cl
 import vertexai
@@ -11,6 +12,7 @@ from vertexai.preview.vision_models import ImageGenerationModel
 import tenacity
 import torch
 from diffusers import StableDiffusion3Pipeline
+from google.cloud import secretmanager
 
 
 
@@ -23,38 +25,65 @@ system_message = (
 "Generate response in the same language as the user's input."
 )
 
+PROJECT_ID = "build-with-ai-project"
+LOCATION = "us-central1"
+
 def get_gcp_credentials(credentials_file=None):
     """
     Retrieves GCP credentials to initialize the Vertex AI client.
     """
     try:
-        if credentials_file:
+        if credentials_file and os.path.exists(credentials_file):
             print(f"Using credentials file: {credentials_file}")
             credentials = service_account.Credentials.from_service_account_file(credentials_file)
         else:
             print("Using default credentials")
             credentials, _ = default()
         return credentials
-
     except FileNotFoundError as e:
-        raise FileNotFoundError(f"Credentials file '{credentials_file}' not found.") from e
+        print(f"Credentials file '{credentials_file}' not found.")
 
     except DefaultCredentialsError as e:
-        raise DefaultCredentialsError("Unable to obtain default credentials. Ensure that the environment "
-                                      "is properly configured.") from e
+        print("Unable to obtain default credentials. Ensure that the environment "
+                                      "is properly configured.")
+        return None
 
 
+def set_hugging_face_credentials(secret_id, secret_version_id="latest"):
+    """
+    Retrieves the Hugging Face token from Secret Manager and sets it as an environment variable.
+    :param project_id:
+    :param secret_id:
+    :param secret_version_id:
+    :return:
+    """
 
-PROJECT_ID = "build-with-ai-project"
-LOCATION = "us-central1"
-app_credentials = get_gcp_credentials("./chat-app-credentials.json")
-vertexai.init(project=PROJECT_ID, location=LOCATION, credentials=app_credentials)
+    # Create the Secret Manager client
+    client = secretmanager.SecretManagerServiceClient()
+    # Build the resource name of the secret
+    name = f"projects/{PROJECT_ID}/secrets/{secret_id}/versions/{secret_version_id}"
+    # Access the secret version
+    response = client.access_secret_version(request={"name": name})
+    # Decode the secret payload
+    secret_payload = response.payload.data.decode("UTF-8")
+    print(f"Accessed secret {secret_id} with value {secret_payload}")
+    # Set the Hugging Face token as an environment variable
+    os.environ['HUGGINGFACE_TOKEN'] = secret_payload
+
+    # Log in to the Hugging Face API
+    from huggingface_hub import login, whoami
+    # Log in to the Hugging Face API
+    login(token=os.environ['HUGGINGFACE_TOKEN'])
+    # Now you can use the Hugging Face API, e.g., with transformers or datasets
+    print(whoami())
+
+credentials = get_gcp_credentials(credentials_file="credentials.json")
+vertexai.init(project=PROJECT_ID, location=LOCATION, credentials=credentials)
+set_hugging_face_credentials("huggingface_token")
+
 google_imagen = ImageGenerationModel.from_pretrained("imagen-3.0-generate-001")
-stable_diffusion = StableDiffusion3Pipeline.from_pretrained(
-    "stabilityai/stable-diffusion-3-medium-diffusers",
-    torch_dtype=torch.float16
-)
-image_gen_pipeline = stable_diffusion.to("mps")
+# stable_diffusion = StableDiffusion3Pipeline.from_pretrained("stabilityai/stable-diffusion-3-medium-diffusers",torch_dtype=torch.float16)
+# image_gen_pipeline = stable_diffusion.to("mps")
 
 
 
@@ -101,19 +130,20 @@ def generate_images_using_stable_diff(prompt: str, num_images: int):
     images_folder = Path("images")
     images_folder.mkdir(exist_ok=True)
     # generate the images
-    result = image_gen_pipeline(
-        prompt,
-        num_images_per_prompt=int(num_images),
-        negative_prompt="",
-        num_inference_steps=28,
-        guidance_scale=7.0,
-    )
-    files = []
-    for i in range(int(num_images)):
-        image_path = images_folder / f"image_{i}.png"
-        result.images[i].save(str(image_path))
-        files.append(image_path)
-    return files
+    # result = image_gen_pipeline(
+    #     prompt,
+    #     num_images_per_prompt=int(num_images),
+    #     negative_prompt="",
+    #     num_inference_steps=28,
+    #     guidance_scale=7.0,
+    # )
+    # files = []
+    # for i in range(int(num_images)):
+    #     image_path = images_folder / f"image_{i}.png"
+    #     result.images[i].save(str(image_path))
+    #     files.append(image_path)
+    #return files
+    return []
 
 
 
