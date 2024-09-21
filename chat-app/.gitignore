@@ -25,6 +25,7 @@ var/
 wheels/
 share/python-wheels/
 chat-app-credentials.json
+credentials.json
 images/
 .idea/**/
 *.egg-info/
