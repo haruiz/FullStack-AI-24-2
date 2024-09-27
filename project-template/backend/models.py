@@ -7,6 +7,7 @@ import joblib
 import tensorflow as tf
 from PIL import Image as PILImage
 from io import BytesIO
+import keras
 
 
 class Framework(Enum):
@@ -16,11 +17,13 @@ class Framework(Enum):
 
 
 class Model(ABC):
-    def __init__(self, 
-                 model_name: str,
-                 model_path: typing.Union[str, Path], 
-                 framework: Framework, 
-                 classes: typing.List[str]):
+    def __init__(
+        self,
+        model_name: str,
+        model_path: typing.Union[str, Path],
+        framework: Framework,
+        classes: typing.List[str],
+    ):
         """
         Abstract base model class to handle loading and predicting using different frameworks.
         """
@@ -57,7 +60,10 @@ class Model(ABC):
         """
         Load a TensorFlow model using Keras.
         """
-        self.model = tf.keras.models.load_model(self.model_path)
+        try:
+            self.model = keras.saving.load_model(self.model_path)
+        except Exception as e:
+            raise ValueError(f"Error loading TensorFlow model")
 
     @abstractmethod
     def predict(self, X: typing.Any) -> typing.Any:
@@ -74,7 +80,11 @@ class Model(ABC):
 
 
 class IrisModel(Model):
-    def __init__(self, framework: Framework = Framework.TENSORFLOW, model_path: typing.Union[str, Path] = None):
+    def __init__(
+        self,
+        framework: Framework = Framework.TENSORFLOW,
+        model_path: typing.Union[str, Path] = None,
+    ):
         """
         Initialize an Iris model, supporting both TensorFlow and sklearn frameworks.
         """
@@ -94,8 +104,10 @@ class IrisModel(Model):
         elif self.framework == Framework.TENSORFLOW:
             predictions = self.model.predict(X)
         else:
-            raise ValueError(f"Framework {self.framework} not supported for prediction.")
-        
+            raise ValueError(
+                f"Framework {self.framework} not supported for prediction."
+            )
+
         outputs = [
             {self.classes[j]: round(float(prob), 3) for j, prob in enumerate(xi_probs)}
             for xi_probs in predictions
@@ -104,7 +116,11 @@ class IrisModel(Model):
 
 
 class FlowersModel(Model):
-    def __init__(self, framework: Framework = Framework.TENSORFLOW, model_path: typing.Union[str, Path] = None):
+    def __init__(
+        self,
+        framework: Framework = Framework.TENSORFLOW,
+        model_path: typing.Union[str, Path] = None,
+    ):
         """
         Initialize a TensorFlow-based Flowers model.
         """
@@ -140,7 +156,7 @@ class FlowersModel(Model):
         img_tensor = self._preprocess_image(image_bytes)
         scores = self.model.predict(img_tensor)
         predictions = tf.nn.softmax(scores)
-        
+
         outputs = [
             {self.classes[j]: round(float(prob), 3) for j, prob in enumerate(xi_probs)}
             for xi_probs in predictions

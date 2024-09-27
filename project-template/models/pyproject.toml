@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "models"
+version = "0.1.0"
+description = ""
+authors = ["haruiz <henryruiz22@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+tensorflow = "^2.17.0"
+tensorflow-metal = "^1.1.0"
+scikit-learn = "^1.5.2"
+notebook = "^7.2.2"
+matplotlib = "^3.9.2"
+tensorflow-datasets = "^4.9.6"
+pandas = "^2.2.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

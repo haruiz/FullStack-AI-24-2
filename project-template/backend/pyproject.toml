@@ -19,6 +19,9 @@ pydantic = "^2.9.2"
 fastapi-restful = {extras = ["all"], version = "^0.6.0"}
 
 
+[tool.poetry.group.dev.dependencies]
+black = "^24.8.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

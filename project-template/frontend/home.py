@@ -1,44 +1,6 @@
 import streamlit as st
-import requests
-import json
-import os
-
-API_URL = os.getenv('API_URL', 'http://localhost:8080')
-print("API_URL", API_URL)
-
-
-def call_iris_model(sepal_length, sepal_width, petal_length, petal_width):
-    """
-    This function calls the iris model
-    """
-    url = f"{API_URL}/iris-model/predict"
-
-    payload = json.dumps({
-    "sepal_length": sepal_length,
-    "sepal_width": sepal_width,
-    "petal_length": petal_length,
-    "petal_width": petal_width
-    })
-    headers = {
-    'Content-Type': 'application/json'
-    }
-
-    response = requests.request("POST", url, headers=headers, data=payload)
-    return response.json()
-
-def call_flowers_model(image_file):
-    """
-    This function calls the flowers model
-    """
-    url = f"{API_URL}/flowers-model/predict"
-    payload = {}
-    files=[
-        ('image',image_file)
-    ]
-    headers = {}
-    response = requests.request("POST", url, headers=headers, data=payload, files=files)
-    return response.json()
-
+from client import call_iris_model, call_flowers_model
+from requests.exceptions import ConnectionError
 
 def create_iris_model_form():
     st.header('Iris Model')
@@ -62,10 +24,19 @@ def create_iris_model_form():
     
     is_clicked = st.button('Predict')
     if is_clicked:
-        with st.spinner('Predicting...'):
-            json_result = call_iris_model(sepal_length, sepal_width, petal_length, petal_width)
-        st.write(json_result)
-        st.balloons()
+        try:
+            with st.spinner('Predicting...'):
+                response = call_iris_model(sepal_length, sepal_width, petal_length, petal_width)
+                
+            if response.status_code != 200:
+                st.error(f"Error: {response.text}")
+            json_result = response.json()
+            st.write(json_result)
+            st.snow()
+        except ConnectionError as ex:
+            st.error(f"Connection error: {ex}")
+        except Exception as ex:
+            st.error(f"Uknown error : {ex}")
 
 def create_flowers_model_form():
     st.header('Flowers Model')
@@ -80,10 +51,20 @@ def create_flowers_model_form():
                  use_column_width=False)
         is_clicked = st.button('Predict')
         if is_clicked:
-            with st.spinner('Predicting...'):
-                json_result = call_flowers_model(image_file)
-            st.write(json_result)
-            st.snow()
+            try:
+                with st.spinner('Predicting...'):
+                    response = call_flowers_model(image_file)
+                    
+                if response.status_code != 200:
+                    st.error(f"Error: {response.text}")
+                json_result = response.json()
+                st.write(json_result)
+                st.snow()
+            except ConnectionError as ex:
+                st.error(f"Connection error: {ex}")
+            except Exception as ex:
+                st.error(f"Uknown error : {ex}")
+
 
 def app():
     st.set_page_config(
